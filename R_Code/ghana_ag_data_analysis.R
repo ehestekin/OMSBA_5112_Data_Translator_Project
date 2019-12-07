@@ -47,3 +47,27 @@ community_health_df <- read_dta('Raw_Data/glss4_new/community/cs4b.dta')
 community_ag_df     <- read_dta('Raw_Data/glss4_new/community/cs5b.dta')
 
 
+# ---------------------- Organize data --------------------------
+
+#comm doesn't use clust while everything else does.  examine reg/dist/eanum and clust
+clust_map_df <- select(id_df, c(region, district, eanum, clust))
+
+#sort by clust and make sure clust doesn't duplicate
+clust_map_df <- clust_map_df %>% arrange(clust) %>% distinct()
+
+#looks like clust is just '4' + eanum (reg/dist are unused)
+#i.e. eanum 4 is clust 4004 and eanum 930 is clust 4930
+test_eanum_mut <- clust_map_df %>% mutate(clust_mut = eanum + 4000)
+
+#above works, do same for all comm dfs
+#select(clust,everything()) puts clust in first column
+community_ag_df <- community_ag_df %>% mutate %>%
+                                       select(clust, everything())
+community_df <- community_df %>% mutate(clust = eanum + 4000) %>%
+                                 select(clust, everything())
+community_health_df <- community_health_df %>% mutate(clust = eanum + 4000) %>%
+                                               select(clust, everything())
+
+
+
+
