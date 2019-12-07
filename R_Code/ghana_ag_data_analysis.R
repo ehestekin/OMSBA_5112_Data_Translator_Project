@@ -36,10 +36,10 @@ education_df  <- read_dta('Raw_Data/glss4_new/sec2a.dta')
 land_chars_df <- read_dta('Raw_Data/glss4_new/sec8a1.dta')
 
 #financials-----------------------------------------------------
-ag_profit_df    <- read_dta('Raw_Data/glss4_new/aggregates/agg2.dta')
-costs_land_df   <- read_dta('Raw_Data/glss4_new/aggregates/exp3.dta')
-costs_crops_df  <- read_dta('Raw_Data/glss4_new/aggregates/exp4.dta')
-costs_livestock <- read_dta('Raw_Data/glss4_new/aggregates/exp5.dta')
+ag_profit_df       <- read_dta('Raw_Data/glss4_new/aggregates/agg2.dta')
+costs_land_df      <- read_dta('Raw_Data/glss4_new/aggregates/exp3.dta')
+costs_crops_df     <- read_dta('Raw_Data/glss4_new/aggregates/exp4.dta')
+costs_livestock_df <- read_dta('Raw_Data/glss4_new/aggregates/exp5.dta')
 
 #community info-------------------------------------------------
 community_df        <- read_dta('Raw_Data/glss4_new/community/cs2.dta')
@@ -69,5 +69,37 @@ community_health_df <- community_health_df %>% mutate(clust = eanum + 4000) %>%
                                                select(clust, everything())
 
 
+#want to tidy with clust and nh being one data point in each row
+#----------------------- Tidy Cost Data ------------------------
 
+#separate farmcd into columns so cost of farm 1, cost of farm2 etc.
+#this allows households with multiple farms to be contained in one row
+#fill in NA with 0 (0 cost for that farm because it doesn't exist.  allows for summing household cost)
+costs_land_tidy_df <- costs_land_df %>% 
+                        spread(key = farmcd, value = landexp, fill = 0) %>%
+                          arrange(clust)
+
+#similarly for crop expense code
+costs_crops_tidy_df <- costs_crops_df %>%
+                        spread(key = crpexpcd, value = cropexp, fill = 0) %>%
+                         arrange(clust)
+
+#and livestock expense
+costs_livestock_tidy_df <- costs_livestock_df %>%
+                            spread(key = crpexpcd, value = livexp, fill = 0) %>%
+                             arrange(clust)
+
+#sum up expenses in each set into new column
+costs_land_tidy_df <- costs_land_tidy_df %>%
+                       mutate(expsum = rowSums(costs_land_tidy_df[,-(1:2)])) %>% #don't include first two columns in sum
+                        select(nh,clust,expsum, everything()) #reorder with sum in front of individual pieces
+
+
+costs_crops_tidy_df <- costs_crops_tidy_df %>%
+                        mutate(expsum = rowSums(costs_crops_tidy_df[,-(1:2)])) %>%
+                         select(nh,clust,expsum, everything())
+
+costs_livestock_tidy_df <- costs_livestock_tidy_df %>%
+                            mutate(expsum = rowSums(costs_livestock_tidy_df[,-(1:2)])) %>%
+                             select(nh,clust,expsum, everything())
 
