@@ -92,17 +92,17 @@ costs_livestock_tidy_df <- costs_livestock_df %>%
 
 #sum up expenses in each set into new column
 costs_land_tidy_df <- costs_land_tidy_df %>%
-                       mutate(expsum = rowSums(costs_land_tidy_df[,-(1:2)])) %>% #don't include first two columns in sum
-                        select(nh,clust,expsum, everything()) #reorder with sum in front of individual pieces
+                       mutate(land_expsum = rowSums(costs_land_tidy_df[,-(1:2)])) %>% #don't include first two columns in sum
+                        select(nh,clust,land_expsum, everything()) #reorder with sum in front of individual pieces
 
 
 costs_crops_tidy_df <- costs_crops_tidy_df %>%
-                        mutate(expsum = rowSums(costs_crops_tidy_df[,-(1:2)])) %>%
-                         select(nh,clust,expsum, everything())
+                        mutate(crop_expsum = rowSums(costs_crops_tidy_df[,-(1:2)])) %>%
+                         select(nh,clust,crop_expsum, everything())
 
 costs_livestock_tidy_df <- costs_livestock_tidy_df %>%
-                            mutate(expsum = rowSums(costs_livestock_tidy_df[,-(1:2)])) %>%
-                             select(nh,clust,expsum, everything())
+                            mutate(livestock_expsum = rowSums(costs_livestock_tidy_df[,-(1:2)])) %>%
+                             select(nh,clust,livestock_expsum, everything())
 
 #ag_profit_df already tidy from the start
 
@@ -120,6 +120,33 @@ education_tidy_df <- education_df %>% filter(s1q23 == 1) %>%
 #found function str_sort which can treat strings as numbers
 #normal sort() did alpha i.e. _1, _10, _11 not _1, _2, _3
 education_tidy_df <- education_tidy_df %>% select(str_sort(names(.), numeric = TRUE))
+
+#add data about household education.  all data is per individual currently
+#first count number of people in household
+#just do this based on how many non-NA answers are in ever attended school question
+educ_hh_size_df <- education_tidy_df %>% select(clust,nh,matches('s2aq1_')) %>%
+                                          mutate(hh_size = rowSums(educ_hh_size_df[,-(1:2)] > 0, na.rm = TRUE )) %>%
+                                          mutate(hh_num_educ = rowSums(educ_hh_size_df[,-(1:2)] == 1, na.rm = TRUE )) %>%
+                                          mutate(hh_educ_rate = hh_num_educ / hh_size)  %>%
+                                          select(-matches('s2aq1_'))
+
+#add similar rates for completing at least oridinary level school (o level)
+#and for some secondary training (after sixth form)
+
+#education level enums
+#excluding 'other' enum (==96) and religious (koranic == 17)
+o_level      <- 8
+some_sec_ed  <- 10
+university   <- 16
+
+educ_hh_highest_ed_df <- education_tidy_df %>% select(clust,nh,matches('s2aq2_')) %>%
+                                              mutate(hh_num_at_least_o_lev = rowSums(educ_hh_highest_ed_df[,-(1:2)] >= o_level & educ_hh_highest_ed_df[,-(1:2)] <= university, na.rm = TRUE))%>%
+                                              mutate(hh_num_some_sec_ed    = rowSums(educ_hh_highest_ed_df[,-(1:2)] >= some_sec_ed & educ_hh_highest_ed_df[,-(1:2)] <= university, na.rm = TRUE)) %>%
+                                              select(-matches('s2aq2_'))
+  
+educ_hh_max_and_rate <- educ_hh_size_df %>% left_join(educ_hh_highest_ed_df, by = c('clust','nh')) %>%
+                                             mutate(hh_rate_at_least_o_lev = hh_num_at_least_o_lev / hh_size) %>%
+                                             mutate(hh_rate_some_sec_ed = hh_num_some_sec_ed / hh_size )
 
 #----------------------- Tidy Community Health Data --------------------
 
@@ -218,4 +245,47 @@ community_health_tidy_df <- rbind(community_health_df_multi_hh_filtered, communi
 
 #all data should be tidy by household  and clust now :)
 
+# ----------------- Profit per consitent unit area ----------------------------
 
+#land data for each household in land_chars_df
+# convert all unit area to acre (3 = ropes = 1/9 acre) ignore the other category (count = 6)
+#add land owned, rented, and land for share cropping
+land_chars_df <- land_chars_df %>% mutate( hh_land_owned_acres = case_when(
+                                                                 s8aq3 == 3 ~ s8aq4 / 9,
+                                                                 s8aq3 == 2 ~ s8aq4,
+                                                                 s8aq3 == 1 ~ s8aq4 )) %>% #others are NA
+                                   mutate(hh_land_rented_acres = case_when(
+                                                                 s8aq3 == 3 ~ s8aq14 / 9,
+                                                                 s8aq3 == 2 ~ s8aq14,
+                                                                 s8aq3 == 1 ~ s8aq14 )) %>% #others are NA
+                                   mutate(hh_land_shared_acres = case_when(
+                                                                 s8aq3 == 3 ~ s8aq17 / 9,
+                                                                 s8aq3 == 2 ~ s8aq17,
+                                                                 s8aq3 == 1 ~ s8aq17 )) %>% #others are NA
+                                   mutate(hh_land_total_acres = rowSums(land_chars_df[,c('hh_land_owned_acres','hh_land_rented_acres','hh_land_shared_acres')],  na.rm = TRUE)) %>%
+                                   select(clust, nh, s8aq3, matches('hh_land'), s8aq4, everything())
+
+
+
+# --------------------- Agricultural Profit Models ------------------------------
+# data should be in a tidy form by EA and household.  
+# consistent unit of area and profit (acre)
+
+#first sum up expenses of all types
+costs_all_tidy_df <- costs_crops_tidy_df %>% left_join(costs_land_tidy_df, by = c('clust','nh')) %>%
+                                             left_join(costs_livestock_tidy_df, by = c('clust','nh')) %>%
+                                             select(clust, nh, matches('_expsum'))%>%
+                                             mutate(total_exp = rowSums(costs_all_tidy_df[,3:5], na.rm = TRUE))
+#add expenses to ag income df 
+ag_profit_df <- ag_profit_df %>% left_join(costs_all_tidy_df, by = c('clust','nh')) %>%
+                                 select(-crop_expsum, -land_expsum, -livestock_expsum)
+
+#after reading doc closer, ag_profit_df has profit so expenses aren't needed.  oh well
+#join profit and land data together
+ag_profit_and_land_char_df <- ag_profit_df  %>% left_join(land_chars_df, by = c('clust','nh')) %>% 
+                                              select(clust, nh, agri1c, matches('hh_land')) %>%
+                                              filter(hh_land_total_acres > 0)
+                                              #only keep households with some land in this df
+
+#add education data for first model
+#ag_profit_land_educ_df <- ag_profit_and_land_char_df %>% left_join()
