@@ -270,6 +270,7 @@ land_chars_df <- land_chars_df %>% mutate( hh_land_owned_acres = case_when(
 # --------------------- Agricultural Profit Models ------------------------------
 # data should be in a tidy form by EA and household.  
 # consistent unit of area and profit (acre)
+# note from doc exchange rate:  exchange rate of about ¢2,394 to the US dollar (march 1999)
 
 #first sum up expenses of all types
 costs_all_tidy_df <- costs_crops_tidy_df %>% left_join(costs_land_tidy_df, by = c('clust','nh')) %>%
@@ -288,4 +289,28 @@ ag_profit_and_land_char_df <- ag_profit_df  %>% left_join(land_chars_df, by = c(
                                               #only keep households with some land in this df
 
 #add education data for first model
-#ag_profit_land_educ_df <- ag_profit_and_land_char_df %>% left_join()
+ag_profit_land_educ_df <- ag_profit_and_land_char_df %>% left_join(educ_hh_max_and_rate, by = c('clust','nh')) %>%
+                                                          mutate(prof_per_acre = agri1c / hh_land_total_acres)
+
+ag_prof_vs_educ_lm <- lm(data = ag_profit_land_educ_df, prof_per_acre ~ hh_educ_rate)
+summary(ag_prof_vs_educ_lm)
+
+#plot fit
+ggplot(data = ag_prof_vs_educ_lm, aes(x = hh_educ_rate, y = prof_per_acre)) +
+  geom_point() +
+  geom_abline(slope = ag_prof_vs_educ_lm$coefficients[2],
+              intercept = ag_prof_vs_educ_lm$coefficients[1], col = 'blue') +
+  ylim(c(-1000000,5e7)) + #6 outliers with this range
+  xlab('Percent household members with some education') +
+  ylab('Profit per acre of household') +
+  ggtitle('Household Agriculture Profit vs Household Education')
+
+#most/least profitable EAs
+profit_grouped_by_clust <- ag_profit_land_educ_df %>% group_by(clust) %>% 
+  summarise(totalEaProfit = sum(agri1c), n = n()) %>%
+  mutate(avg_hh_prof = totalEaProfit / n) %>%
+  arrange(desc(totalEaProfit))
+
+#ggplot(data = profit_grouped_by_clust[1:10,], aes(x = clust, y = totalEaProfit)) +
+#  geom_bar(stat="identity")
+
