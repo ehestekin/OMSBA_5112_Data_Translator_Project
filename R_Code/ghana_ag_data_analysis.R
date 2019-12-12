@@ -294,6 +294,7 @@ ag_profit_land_educ_df <- ag_profit_and_land_char_df %>% left_join(educ_hh_max_a
 
 ag_prof_vs_educ_lm <- lm(data = ag_profit_land_educ_df, prof_per_acre ~ hh_educ_rate)
 summary(ag_prof_vs_educ_lm)
+#statistically significant (p = 0.027)
 
 #plot fit
 ggplot(data = ag_prof_vs_educ_lm, aes(x = hh_educ_rate, y = prof_per_acre)) +
@@ -305,12 +306,23 @@ ggplot(data = ag_prof_vs_educ_lm, aes(x = hh_educ_rate, y = prof_per_acre)) +
   ylab('Profit per acre of household') +
   ggtitle('Household Agriculture Profit vs Household Education')
 
+#add dummy variable for some secondary education
+ag_profit_land_educ_df <- ag_profit_land_educ_df %>%
+  mutate(any_sec_ed = case_when(hh_num_some_sec_ed == 0 ~ 0,
+                                hh_num_some_sec_ed >= 1 ~ 1))
+
+#regression on any household secondary ed
+ag_prof_vs_any_sec_ed_lm <- lm(prof_per_acre ~ any_sec_ed, data = ag_profit_land_educ_df)
+summary(ag_prof_vs_any_sec_ed_lm)
+#p-value very very high so secondary ed is not a good estimator
+
 #most/least profitable EAs
 profit_grouped_by_clust <- ag_profit_land_educ_df %>% group_by(clust) %>% 
   summarise(totalEaProfit = sum(agri1c), n = n()) %>%
   mutate(avg_hh_prof = totalEaProfit / n) %>%
   arrange(desc(totalEaProfit))
 
+#plot ten most profitable EAs
 #ggplot(data = profit_grouped_by_clust[1:10,], aes(x = clust, y = totalEaProfit)) +
 #  geom_bar(stat="identity")
 
