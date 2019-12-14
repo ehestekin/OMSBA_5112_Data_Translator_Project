@@ -326,3 +326,15 @@ profit_grouped_by_clust <- ag_profit_land_educ_df %>% group_by(clust) %>%
 #ggplot(data = profit_grouped_by_clust[1:10,], aes(x = clust, y = totalEaProfit)) +
 #  geom_bar(stat="identity")
 
+
+agri_lm0 <- lm(ag_profit_land_educ_df$agri1c ~ ag_profit_land_educ_df$crop_expsum + ag_profit_land_educ_df$land_expsum
+               + ag_profit_land_educ_df$livestock_expsum +ag_profit_land_educ_df$total_exp)
+agri_lm1 <- lm(ag_profit_land_educ_df$agri1c ~ ag_profit_land_educ_df$hhagdepn + ag_profit_land_educ_df$crop_expsum + ag_profit_land_educ_df$land_expsum
+               +ag_profit_land_educ_df$livestock_expsum +ag_profit_land_educ_df$total_exp)
+agri_lm5 <- lm(ag_profit_land_educ_df$agri1c ~ ag_profit_land_educ_df$hhagdepn + ag_profit_land_educ_df$crop_expsum + ag_profit_land_educ_df$land_expsum
+               +ag_profit_land_educ_df$livestock_expsum +ag_profit_land_educ_df$total_exp + ag_profit_land_educ_df$s8aid1 + ag_profit_land_educ_df$clust
+               +ag_profit_land_educ_df$s8aint1 + ag_profit_land_educ_df$s8aq1 + ag_profit_land_educ_df$s8aq2)
+
+summary(agri_lm)
+summary(agri_lm1)
+summary(agri_lm5)
