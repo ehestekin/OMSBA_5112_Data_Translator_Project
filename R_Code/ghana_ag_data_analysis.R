@@ -343,7 +343,7 @@ ag_prof_vs_any_sec_ed_lm <- lm(prof_per_acre ~ any_sec_ed, data = ag_profit_land
 summary(ag_prof_vs_any_sec_ed_lm)
 #p-value very very high so secondary ed is not a good estimator
 
-#verify with t test
+#verify with t test 
 t.test(prof_per_acre ~ any_sec_ed, data = ag_profit_land_educ_df)
 
 #most/least profitable EAs
@@ -356,18 +356,6 @@ profit_grouped_by_clust <- ag_profit_land_educ_df %>% group_by(clust) %>%
 # ggplot(data = profit_grouped_by_clust[1:10,], aes(x = clust, y = totalEaProfit)) +
 #  geom_bar(stat="identity")
 
-#these give errors due to missing vars so commenting out
-agri_lm0 <- lm(ag_profit_land_educ_df$agri1c ~ ag_profit_land_educ_df$crop_expsum + ag_profit_land_educ_df$land_expsum
-               + ag_profit_land_educ_df$livestock_expsum +ag_profit_land_educ_df$total_exp)
-agri_lm1 <- lm(ag_profit_land_educ_df$agri1c ~ ag_profit_land_educ_df$hhagdepn + ag_profit_land_educ_df$crop_expsum + ag_profit_land_educ_df$land_expsum
-               +ag_profit_land_educ_df$livestock_expsum +ag_profit_land_educ_df$total_exp)
-agri_lm5 <- lm(ag_profit_land_educ_df$agri1c ~ ag_profit_land_educ_df$hhagdepn + ag_profit_land_educ_df$crop_expsum + ag_profit_land_educ_df$land_expsum
-               +ag_profit_land_educ_df$livestock_expsum +ag_profit_land_educ_df$total_exp + ag_profit_land_educ_df$s8aid1 + ag_profit_land_educ_df$clust
-               +ag_profit_land_educ_df$s8aint1 + ag_profit_land_educ_df$s8aq1 + ag_profit_land_educ_df$s8aq2)
-#
-# summary(agri_lm)
-# summary(agri_lm1)
-# summary(agri_lm5)
 
 # ---------------------- Regression on Community Data ---------------
 
@@ -392,7 +380,7 @@ hh_prof_community_discrete_lm <- lm(prof_per_acre ~ Bank_in_Comm + Motor_Road_in
 summary(hh_prof_community_discrete_lm)
 #Road in COmm is significant
 
-hh_prof_community_ag_lm <- lm( prof_per_acre ~ Use_Chem_Fert + Irrigated_Fields + Use_Insecticides, data = combined_all_tidy_df)
+hh_prof_community_ag_lm <- lm(prof_per_acre ~ Use_Chem_Fert + Irrigated_Fields + Use_Insecticides, data = combined_all_tidy_df)
 summary(hh_prof_community_ag_lm)
 
 #verify significance of road in community
@@ -407,8 +395,13 @@ profit_per_acre_all_vars_lm <- lm(prof_per_acre ~ hh_educ_rate + Dist_to_Bank + 
 summary(profit_per_acre_all_vars_lm)
 
 #shows some more significance in a few vars.  T test them
-t.test(agri1c ~ Use_Insecticides, data = combined_all_tidy_df)
-t.test(agri1c ~ Irrigated_Fields, data = combined_all_tidy_df)
+t.test(agri1c ~ Motor_Road_in_Comm, data = combined_all_tidy_df) #SIG
+t.test(agri1c ~ Use_Insecticides, data = combined_all_tidy_df) #SIG
+t.test(prof_per_acre ~ Irrigated_Fields, data = combined_all_tidy_df) #SIG 
+t.test(agri1c ~ Bank_in_Comm, data = combined_all_tidy_df) #SIG
+t.test(agri1c ~ Use_Chem_Fert, data = combined_all_tidy_df) #INSIG
+t.test(agri1c ~ Perm_Market_in_Comm, data = combined_all_tidy_df) #INSIG
+
 
 #run same tests for per acre data
 t_test_insect <- t.test(prof_per_acre ~ Use_Insecticides, data = combined_all_tidy_df)
@@ -437,28 +430,15 @@ ggplot(data = t_test_insect_results, aes(x, means)) +
   ylab('Mean Profit per Acre') +
   ggtitle('Profit per Acre vs Insecticide Use')
 
+t_test_irrigation_results <- data.frame(x = c('No', 'Yes'), means = c(838390.7, 238383.7))
 
-# ACME Communications Memo
-# 400-500 words
-# 
-# Result and interpretation of finding only, but no statistics, no jargon,  not a recommendation
-# 
-# Profits/acres. ——> whom to target/what areas
-# 
-# Point out 3 different significant variables, and reasons (possible explainations - no wrong answer)
-# level of education  - why? (Higher edu > higher income) - 
-# use of insecticides - why? (Use of insecticides saves crops, 2x as profitable)
-# lack of roads-  why? (More acre per household for agriculture?)
-# 
-# run models, and tests (t/p values) just to see level of significance, (verify)
-# reference accompanied  graphs to highlight relevant points, 
-# 
-# Point out 2 different Insignificant variables, and reasons (seems counter intuitive, why)
-# Irrigated land - why? (Price of water too costly?)
-# distance to market - why (?)
-# 
-# ————————————————————————————————————————————
-# Rescale - household agricultural profit vs household education
-# Generate table showing irrigation (back up showing not significant)
-# General table showing distance to market (back up showing not significant)
+ggplot(data = t_test_irrigation_results, aes(x, means)) +
+  geom_bar(stat="identity", fill = c('#add8e6', '#b5651d')) +
+  geom_text(aes(label = format(round(means, digits = 0), big.mark = ','))) +
+  xlab('Irrigated Fields in the Community') +
+  ylab('Mean Profit per Acre') +
+  ggtitle('Profit per Acre vs Irrigated Fields')
+
+
+
 
