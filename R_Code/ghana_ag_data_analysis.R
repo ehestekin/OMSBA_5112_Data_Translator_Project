@@ -437,4 +437,11 @@ ggplot(data = t_test_insect_results, aes(x, means)) +
   ylab('Mean Profit per Acre') +
   ggtitle('Profit per Acre vs Insecticide Use')
 
+t_test_irrigation_results <- data.frame(x = c('No', 'Yes'), means = c(838390.7, 238383.7))
 
+ggplot(data = t_test_irrigation_results, aes(x, means)) +
+  geom_bar(stat="identity", fill = c('#add8e6', '#b5651d')) +
+  geom_text(aes(label = format(round(means, digits = 0), big.mark = ','))) +
+  xlab('Irrigated Fields in the Community') +
+  ylab('Mean Profit per Acre') +
+  ggtitle('Profit per Acre vs Irrigated Fields')
